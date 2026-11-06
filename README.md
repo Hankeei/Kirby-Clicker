@@ -32,10 +32,10 @@ even when the exe sits in a read-only or temporary folder.
 
 ### From source
 
-Requirements: Windows 10/11, Python 3.10+ and PySide6.
+Requirements: Windows 10/11, Python 3.10+ and PySide6. Clone the repository
+(green **Code** button) or download the ZIP, then from its folder:
 
 ```powershell
-git clone <REPO_URL> "Record Clicker"
 cd "Record Clicker"
 py -3.13 -m pip install -r requirements.txt
 py -3.13 main.py
