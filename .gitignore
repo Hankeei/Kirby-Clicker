@@ -1,0 +1,25 @@
+# Build artefacts
+dist/
+build/
+*.spec
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local runtime data (created next to the source on launch)
+settings.json
+binds.txt
+profiles/
+*.log
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+desktop.ini
