@@ -190,10 +190,10 @@ on its first frame when OFF, so it costs no idle CPU.
    cursor position and loops until you release the button. Profiles with other
    names are listed too and load fine.
 6. **Manage profiles.** Recordings already save themselves as `recN.txt`, so
-   there is no **Save as** button. **Rename** renames the profile picked in the
-   dropdown (validates the name, refuses an existing file and keeps the profile
-   selected after the rename), and **Open folder** opens `profiles/` in
-   Explorer.
+   there is no **Save as** button. The separate **Profiles** card below the
+   Record card holds **Rename** (renames the profile picked in the dropdown,
+   validates the name, refuses an existing file and keeps the profile selected
+   after the rename) and **Open folder** (opens `profiles/` in Explorer).
 7. **Dry run.** Tick **Settings → Dry run** to run the same hold-trigger replay
    without sending any clicks. No input leaves the app.
 8. **Auto tab.** Pick one of five timing methods, drag or type the low/high CPS
@@ -401,8 +401,8 @@ powershell -ExecutionPolicy Bypass -File .\build\verify_exe_env.ps1
 
 | Check | Result |
 | --- | --- |
-| Unit tests (142) | OK — profile rename with name validation/conflict and selection retained, rename dialog wiring, Open folder wired to the real `profiles/` path, linked CPS bounds in `Static ⚠` plus independent bounds in the other methods, rename + multi-legacy migration, music option/volume defaults (0.05) and persistence, settings schema, recN auto-naming, profile header `# ClickProfile v1 (Kirby Clicker)` with legacy header still loading, ON/OFF toggle, mascot swap, cat play/pause/reset, bite clamped to the Record pill at both sizes, mode labels `Random` / `Static ⚠` with stable ids, clickable signature/link footer, mouse routing, five timing modes, bind persistence/validation |
-| `verify_dryrun.py` | PASS — max drift 3.2 ms, max interval error 2.5 ms, max hold error 0.0 ms (tolerance ±12 ms) |
+| Unit tests (144) | OK — separate Profiles card with its own title rule and no card overlap at 560×437 / 440×250, profile rename with name validation/conflict and selection retained, rename dialog wiring, Open folder wired to the real `profiles/` path, linked CPS bounds in `Static ⚠` plus independent bounds in the other methods, rename + multi-legacy migration, music option/volume defaults (0.05) and persistence, settings schema, recN auto-naming, profile header `# ClickProfile v1 (Kirby Clicker)` with legacy header still loading, ON/OFF toggle, mascot swap, cat play/pause/reset, bite clamped to the Record pill at both sizes, mode labels `Random` / `Static ⚠` with stable ids, clickable signature/link footer, mouse routing, five timing modes, bind persistence/validation |
+| `verify_dryrun.py` | PASS — max drift 3.1 ms, max interval error 3.1 ms, max hold error 0.3 ms (tolerance ±12 ms) |
 | `verify_click_delivery.py` | PASS — foreground/background press+release, 3/3 replay |
 | `verify_hotkeys.py` | PASS — F8 record start/stop, F9 ON/OFF, Ctrl+F12 quit |
 | `verify_trigger.py` | PASS — F9 ON, profile trigger press/release, auto tab press/release, F9 OFF |

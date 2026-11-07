@@ -16,7 +16,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, Qt  # noqa: E402
 from PySide6.QtGui import QMovie  # noqa: E402
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton  # noqa: E402
+from PySide6.QtWidgets import QApplication, QFrame, QLabel, QPushButton  # noqa: E402
 
 from app.core.profile import next_recording_path, save_profile_values  # noqa: E402
 from app.core.settings import AppSettings, load_settings, save_settings  # noqa: E402
@@ -343,6 +343,29 @@ class RedesignWindowTest(unittest.TestCase):
         self.assertTrue(second.is_file())
         self.assertEqual(second.read_text(encoding="utf-8").splitlines()[0], "# ClickProfile v1 (Kirby Clicker)")
         self.assertEqual(Path(window.profile_combo.currentData()), first)
+
+    def test_profile_actions_live_in_their_own_card(self) -> None:
+        window = self.window
+        tools = window._profile_tools_card
+        self.assertTrue(tools.isAncestorOf(window.profile_rename_button))
+        self.assertTrue(tools.isAncestorOf(window.profile_folder_button))
+        self.assertFalse(window._recorder_card.isAncestorOf(window.profile_rename_button))
+        self.assertFalse(window._recorder_card.isAncestorOf(window.profile_folder_button))
+        title = tools.findChild(QLabel, "PanelTitle")
+        self.assertIsNotNone(title)
+        self.assertEqual(title.text(), "PROFILES")
+        self.assertIsNotNone(tools.findChild(QFrame, "TitleRule"))
+
+    def test_recorder_cards_do_not_overlap_at_default_or_minimum_size(self) -> None:
+        window = self.window
+        for width, height in ((560, 437), (440, 250)):
+            with self.subTest(size=(width, height)):
+                window.resize(width, height)
+                self.app.processEvents()
+                record = window._recorder_card.geometry()
+                tools = window._profile_tools_card.geometry()
+                self.assertFalse(record.intersects(tools))
+                self.assertLess(record.bottom(), tools.top())
 
     def test_open_folder_opens_the_real_profiles_directory(self) -> None:
         window = self.window

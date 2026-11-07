@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
     def _build_recorder_tab(self) -> QWidget:
         page = QWidget()
         outer = QVBoxLayout(page)
-        outer.setContentsMargins(0, 10, 0, 0)
+        outer.setContentsMargins(0, 10, 0, 10)
         outer.setSpacing(10)
 
         card = Card()
@@ -298,14 +298,14 @@ class MainWindow(QMainWindow):
         self.record_button = QPushButton("●  Record  F8")
         self.record_button.setObjectName("Primary")
         self.record_button.setMinimumHeight(40)
-        self.record_button.setMinimumWidth(152)
+        self.record_button.setMinimumWidth(136)
         self.record_button.setCursor(Qt.PointingHandCursor)
         self.record_button.clicked.connect(self._toggle_recording)
         row.addWidget(self.record_button)
         row.addStretch(1)
 
         self.profile_combo = QComboBox()
-        self.profile_combo.setMinimumWidth(104)
+        self.profile_combo.setMinimumWidth(96)
         self.profile_combo.setFixedHeight(34)
         self.profile_combo.setToolTip("Saved profiles")
         self.profile_combo.currentIndexChanged.connect(lambda _i: self._update_controls())
@@ -318,6 +318,27 @@ class MainWindow(QMainWindow):
         self.profile_load_button.clicked.connect(self._load_selected_profile)
         row.addWidget(self.profile_load_button)
         cushion.body().addLayout(row)
+        card.body().addWidget(cushion)
+        card.body().addStretch(1)
+        outer.addWidget(card, 1)
+
+        # Profile housekeeping lives in its own card so the Record card above
+        # only contains recording controls.
+        tools = Card()
+        self._profile_tools_card = tools
+        tools_header = QHBoxLayout()
+        tools_header.setSpacing(8)
+        tools_title = QLabel("PROFILES")
+        tools_title.setObjectName("PanelTitle")
+        tools_title.setFont(theme.panel_title_font())
+        tools_title.setStyleSheet(f"color: {theme.MUTED};")
+        tools_header.addWidget(tools_title)
+        tools_rule = QFrame()
+        tools_rule.setObjectName("TitleRule")
+        tools_rule.setFixedHeight(1)
+        tools_rule.setStyleSheet(f"background: {theme.HAIRLINE}; border: none;")
+        tools_header.addWidget(tools_rule, 1)
+        tools.body().addLayout(tools_header)
 
         actions = QHBoxLayout()
         actions.setSpacing(6)
@@ -334,10 +355,8 @@ class MainWindow(QMainWindow):
         self.profile_folder_button.clicked.connect(self._open_profiles_folder)
         actions.addWidget(self.profile_folder_button)
         actions.addStretch(1)
-        cushion.body().addLayout(actions)
-        card.body().addWidget(cushion)
-        card.body().addStretch(1)
-        outer.addWidget(card, 1)
+        tools.body().addLayout(actions)
+        outer.addWidget(tools)
 
         self._recorder_page = page
         # Kirby hangs over the Record pill, so the sprite lives on the window
