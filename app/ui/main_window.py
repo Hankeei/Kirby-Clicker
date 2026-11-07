@@ -11,8 +11,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, QSize, Qt, QTimer
-from PySide6.QtGui import QIcon, QMovie, QPixmap
+from PySide6.QtCore import QPoint, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QIcon, QMovie, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -33,12 +34,15 @@ from PySide6.QtWidgets import (
 
 from ..core.autoclicker import (
     AutoClickerSession,
+    MAX_CPS,
     METHOD_DESCRIPTIONS,
     METHOD_GAUSSIAN,
     METHOD_GAUSSIAN_POISSON,
     METHOD_LABELS,
     METHOD_SHORT_LABELS,
+    METHOD_STATIC,
     METHODS,
+    MIN_CPS,
     clamp_sigma,
     normalise_method,
     sync_bounds,
@@ -54,6 +58,7 @@ from ..core.profile import (
     ProfileFormatError,
     load_profile,
     next_recording_path,
+    rename_profile_file,
     save_profile,
 )
 from ..core.recorder import MouseHookThread, RecorderEngine
@@ -313,6 +318,23 @@ class MainWindow(QMainWindow):
         self.profile_load_button.clicked.connect(self._load_selected_profile)
         row.addWidget(self.profile_load_button)
         cushion.body().addLayout(row)
+
+        actions = QHBoxLayout()
+        actions.setSpacing(6)
+        self.profile_rename_button = QPushButton("Rename")
+        self.profile_rename_button.setFixedHeight(30)
+        self.profile_rename_button.setCursor(Qt.PointingHandCursor)
+        self.profile_rename_button.setToolTip("Rename the picked profile")
+        self.profile_rename_button.clicked.connect(lambda: self._rename_profile())
+        actions.addWidget(self.profile_rename_button)
+        self.profile_folder_button = QPushButton("Open folder")
+        self.profile_folder_button.setFixedHeight(30)
+        self.profile_folder_button.setCursor(Qt.PointingHandCursor)
+        self.profile_folder_button.setToolTip("Open the profiles folder in Explorer")
+        self.profile_folder_button.clicked.connect(self._open_profiles_folder)
+        actions.addWidget(self.profile_folder_button)
+        actions.addStretch(1)
+        cushion.body().addLayout(actions)
         card.body().addWidget(cushion)
         card.body().addStretch(1)
         outer.addWidget(card, 1)
@@ -484,6 +506,7 @@ class MainWindow(QMainWindow):
         self._start_hotkeys()
         self._restart_trigger_monitor()
         self._auto_loaded = True
+        self._tie_static_bounds()
         self._update_auto_labels()
         self._update_controls()
         if self.settings.compact_enabled:
@@ -759,33 +782,34 @@ class MainWindow(QMainWindow):
             return
         self._load_profile_path(path, announce=True)
 
-    def _save_as(self) -> None:
-        if not self.profile or not self.profile.clicks:
-            self._append_log("warn", "Nothing to save — record or load a profile first.")
+    def _rename_profile(self, new_name: str | None = None) -> None:
+        if self.mode != "setup":
             return
-        suggestion = (
-            self.profile.path.name
-            if self.profile.path
-            else next_recording_path(self.profiles_dir).name
-        )
-        filename, _filter = QFileDialog.getSaveFileName(
-            self, "Save click profile", str(self.profiles_dir / suggestion), "Click profiles (*.txt)"
-        )
-        if not filename:
+        path = self._selected_profile_path()
+        if path is None:
+            self._append_log("warn", "No profile to rename — record one first.")
             return
-        path = Path(filename)
-        if path.suffix.lower() != ".txt":
-            path = path.with_suffix(".txt")
+        if new_name is None:
+            new_name, accepted = QInputDialog.getText(
+                self, "Rename profile", "New name:", text=path.stem
+            )
+            if not accepted:
+                return
         try:
-            saved = save_profile(path, self.profile)
-        except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Save failed", str(exc))
-            self._append_log("error", f"Could not save profile: {exc}")
+            target = rename_profile_file(path, new_name)
+        except ProfileFormatError as exc:
+            self._append_log("error", f"Rename failed: {exc}")
+            QMessageBox.warning(self, "Rename failed", str(exc))
             return
-        self._set_profile(saved)
-        self._refresh_profiles(select_path=path)
-        self._append_log("accent", f"Saved profiles/{path.name}")
-        self._update_controls()
+        if self.profile and self.profile.path and self.profile.path.resolve() == path.resolve():
+            self.profile.path = target
+            self.profile.name = target.stem
+        self._refresh_profiles(select_path=target)
+        self._append_log("accent", f"Renamed {path.name} → {target.name}")
+
+    def _open_profiles_folder(self) -> None:
+        self.profiles_dir.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.profiles_dir)))
 
     def _delete_profile(self) -> None:
         if self.mode != "setup":
@@ -988,11 +1012,19 @@ class MainWindow(QMainWindow):
         self._apply_auto_bounds(side, raw / 10.0)
 
     def _apply_auto_bounds(self, side: str, value: float) -> None:
-        """Move one bound, pushing the other so low <= high always holds."""
-        low = value if side == "low" else float(self.auto_min_spin.value())
-        high = value if side == "high" else float(self.auto_max_spin.value())
-        low, high = sync_bounds(low, high, changed=side)
-        low, high = validate_cps(low, high)
+        """Move one bound, pushing the other so low <= high always holds.
+
+        Static mode has no variation, so both bounds are tied: moving or typing
+        either one sets both to that value.
+        """
+        if self._auto_method() == METHOD_STATIC:
+            value = min(max(float(value), MIN_CPS), MAX_CPS)
+            low = high = value
+        else:
+            low = value if side == "low" else float(self.auto_min_spin.value())
+            high = value if side == "high" else float(self.auto_max_spin.value())
+            low, high = sync_bounds(low, high, changed=side)
+            low, high = validate_cps(low, high)
         self._syncing_auto = True
         try:
             self.auto_min_spin.setValue(low)
@@ -1003,10 +1035,21 @@ class MainWindow(QMainWindow):
             self._syncing_auto = False
         self._save_auto_settings()
 
+    def _tie_static_bounds(self) -> None:
+        """Collapse differing bounds to their midpoint when Static is selected."""
+        if self._auto_method() != METHOD_STATIC:
+            return
+        low = float(self.auto_min_spin.value())
+        high = float(self.auto_max_spin.value())
+        if low == high:
+            return
+        self._apply_auto_bounds("low", round((low + high) / 2.0, 1))
+
     def _on_auto_method_changed(self) -> None:
         if self._syncing_auto:
             return
         self._save_auto_settings()
+        self._tie_static_bounds()
         self._update_auto_labels()
         self._update_controls()
         self._update_compact_state()
@@ -1490,7 +1533,8 @@ class MainWindow(QMainWindow):
         self.dry_check.setEnabled(can_edit)
         self.profile_combo.setEnabled(can_edit)
         self.profile_load_button.setEnabled(can_edit)
-        self.profile_save_button.setEnabled(can_edit and has_profile)
+        self.profile_rename_button.setEnabled(can_edit and self._selected_profile_path() is not None)
+        self.profile_folder_button.setEnabled(True)
         self.profile_import_button.setEnabled(can_edit)
         self.profile_export_button.setEnabled(can_edit and has_profile)
         self.profile_delete_button.setEnabled(can_edit and self._selected_profile_path() is not None)

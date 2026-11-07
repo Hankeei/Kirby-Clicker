@@ -135,8 +135,8 @@ Windows itself:
 clean-VM test was not possible. The closest available test launched
 `dist\KirbyClicker.exe` with `PATH` reduced to `%SystemRoot%\System32` and
 `PYTHONHOME`, `PYTHONPATH`, `PYTHONSTARTUP` and `VIRTUAL_ENV` removed:
-`--selftest` reported a valid 28-frame GIF and audio actually playing at 30 %
-volume (position 2273 ms), the window opened with the title `Kirby Clicker`,
+`--selftest` reported a valid 28-frame GIF and audio actually playing at 5 %
+volume (position 2352 ms), the window opened with the title `Kirby Clicker`,
 both segments were enumerated through UI Automation, and the settings dialog
 opened. `python` was not resolvable on the stripped `PATH`. That shows the exe
 does not fall back to the installed interpreter, but it is not the same as
@@ -189,12 +189,17 @@ on its first frame when OFF, so it costs no idle CPU.
    clicker ON, then hold the mouse trigger. Playback starts at the current
    cursor position and loops until you release the button. Profiles with other
    names are listed too and load fine.
-6. **Dry run.** Tick **Settings → Dry run** to run the same hold-trigger replay
+6. **Manage profiles.** Recordings already save themselves as `recN.txt`, so
+   there is no **Save as** button. **Rename** renames the profile picked in the
+   dropdown (validates the name, refuses an existing file and keeps the profile
+   selected after the rename), and **Open folder** opens `profiles/` in
+   Explorer.
+7. **Dry run.** Tick **Settings → Dry run** to run the same hold-trigger replay
    without sending any clicks. No input leaves the app.
-7. **Auto tab.** Pick one of five timing methods, drag or type the low/high CPS
+8. **Auto tab.** Pick one of five timing methods, drag or type the low/high CPS
    bounds, choose the sigma (Gaussian modes, shown only for those), turn the
    clicker ON and hold the trigger. Every gap is clamped inside the bounds.
-8. **Compact overlay.** Click **⤢** in the header to shrink to a small
+9. **Compact overlay.** Click **⤢** in the header to shrink to a small
    always-on-top widget showing the method, a pink/ON state pill and the
    music-box equalizer. **⤢** restores the main window with its previous
    geometry.
@@ -243,7 +248,7 @@ The gear button opens one dialog that holds everything secondary:
 | **Dry run** | on / off | Replays the same trigger and timings without sending any click. |
 | **Scope** | `Selected app` / `Anywhere` | Selected app restricts clicks to the picked process; Anywhere clicks at the cursor and only excludes Kirby Clicker itself. |
 | **Target** | process name + **Pick…** | Enabled only for Selected app; the picker is `F10`. |
-| **Background music** | on / off + volume | Loops `assets/luolei.mp3`, default on at 30 %. See Music below. |
+| **Background music** | on / off + volume | Loops `assets/luolei.mp3`, default on at 5 %. See Music below. |
 | **Edit binds…** | — | Opens the bind editor (also `INSERT`). |
 
 Everything here is written to `settings.json` / `binds.txt` immediately, so it
@@ -254,7 +259,7 @@ survives a restart; only the ON/OFF arm state is session-only.
 **Settings → Background music** loops `assets/luolei.mp3` endlessly. It is on
 by default and purely background: it keeps playing whether the clicker is ON
 or OFF, and only stops when the option is unchecked. The volume slider
-defaults to **30 %** and persists with the option in `settings.json`.
+defaults to **5 %** and persists with the option in `settings.json`.
 QtMultimedia's `QMediaPlayer`/`QAudioOutput` with `setLoops(-1)` does the
 playback. If QtMultimedia or the file is missing or corrupt, the app degrades
 quietly to no music and keeps working.
@@ -309,6 +314,12 @@ trigger, click a mouse button instead. ESC cancels a capture. On save the app:
   typing up to **50 CPS**. Dragging the lower slider past the upper pushes the
   upper along (and vice versa); typed values obey the same rule, so
   `lower ≤ upper` always holds. Values are also clamped to 1–50.
+- **Static ⚠ links the bounds.** Static has no variation, so the low and high
+  CPS are tied to one value: moving either slider or typing either box sets
+  both, and the other slider and spin box follow. Selecting Static from another
+  method collapses the pair to its midpoint (8–14 becomes 11–11). The sliders
+  still top out at 30 CPS, so a typed 31–50 is held by both spin boxes while
+  both sliders sit at 30. The other four methods keep independent bounds.
 - **Method** picker; the long description lives in its tooltip. **Sigma** is
   shown for the two Gaussian-based methods (5–40 % of the mean, default **15 %**).
 - The footer carries a compact **equalizer** — 24 vertical bars, no labels,
@@ -343,7 +354,7 @@ SciPy/NumPy is involved.
 | **Gaussian** | `g = gauss(μ, σ·μ)` — normal gaps around the midpoint. |
 | **Poisson** | `g = expovariate(m / 1000)` — exponential gaps, mean `μ`, i.e. a Poisson arrival process at `m` CPS. |
 | **Gaussian + Poisson** | `λ ~ gauss(m, σ·m)` (resampled while `λ < 0.5`), then `g = expovariate(λ / 1000)` — a per-click tempo with a global Gaussian shape. |
-| **Static ⚠** | `g = μ` exactly — no random sampling, so the gap never changes. Set lower = upper for an exact target. Hold time still jitters. |
+| **Static ⚠** | `g = μ` exactly — no random sampling, so the gap never changes. The low and high bounds are linked, so picking Static sets both to one value. Hold time still jitters. |
 
 The stored identifiers in `settings.json` are still `blatant` and `static`, so a
 config written by any earlier build keeps resolving to the same mode; only the
@@ -390,13 +401,13 @@ powershell -ExecutionPolicy Bypass -File .\build\verify_exe_env.ps1
 
 | Check | Result |
 | --- | --- |
-| Unit tests (129) | OK — rename + multi-legacy migration, music option/volume defaults (0.30) and persistence, settings schema, recN auto-naming, profile header `# ClickProfile v1 (Kirby Clicker)` with legacy header still loading, ON/OFF toggle, mascot swap, cat play/pause/reset, bite clamped to the Record pill at both sizes, mode labels `Random` / `Static ⚠` with stable ids, clickable signature/link footer, mouse routing, five timing modes, bind persistence/validation |
-| `verify_dryrun.py` | PASS — max drift 2.9 ms, max hold error 0.7 ms (tolerance ±12 ms) |
+| Unit tests (142) | OK — profile rename with name validation/conflict and selection retained, rename dialog wiring, Open folder wired to the real `profiles/` path, linked CPS bounds in `Static ⚠` plus independent bounds in the other methods, rename + multi-legacy migration, music option/volume defaults (0.05) and persistence, settings schema, recN auto-naming, profile header `# ClickProfile v1 (Kirby Clicker)` with legacy header still loading, ON/OFF toggle, mascot swap, cat play/pause/reset, bite clamped to the Record pill at both sizes, mode labels `Random` / `Static ⚠` with stable ids, clickable signature/link footer, mouse routing, five timing modes, bind persistence/validation |
+| `verify_dryrun.py` | PASS — max drift 3.2 ms, max interval error 2.5 ms, max hold error 0.0 ms (tolerance ±12 ms) |
 | `verify_click_delivery.py` | PASS — foreground/background press+release, 3/3 replay |
 | `verify_hotkeys.py` | PASS — F8 record start/stop, F9 ON/OFF, Ctrl+F12 quit |
 | `verify_trigger.py` | PASS — F9 ON, profile trigger press/release, auto tab press/release, F9 OFF |
-| Packaged `--selftest` | PASS — `cat.gif` exists, valid, 28 frames, 240×240; `luolei.mp3` available, playing, position 2273 ms, volume 0.30, no error |
-| Packaged GUI | PASS — title `Kirby Clicker`, `Power`/`Settings`/`Compact`/`Record` buttons via UIA, Auto tab switch, ON state, settings dialog |
+| Packaged `--selftest` | PASS — `cat.gif` exists, valid, 28 frames, 240×240; `luolei.mp3` available, playing, position 2352 ms, volume 0.05, no error |
+| Packaged GUI | PASS — title `Kirby Clicker`, `Power`/`Settings`/`Compact`/`Record`/`Rename`/`Open folder` buttons via UIA, Auto tab switch, ON state, settings dialog |
 | GUI screenshots | `screenshots/app.png` (560×437), `app_min.png` (440×250), `auto_tab.png`, `app_armed.png`, `compact.png`, `settings.png`; frozen copies `app_exe.png`, `app_exe_auto.png`, `app_exe_on.png`, `app_exe_settings.png` |
 
 The packaged exe was launched with the Python environment stripped (see the

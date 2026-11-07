@@ -14,6 +14,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QUrl
 
 from ..core.paths import asset_path
+from ..core.settings import DEFAULT_MUSIC_VOLUME
 
 
 class MusicPlayer(QObject):
@@ -23,7 +24,7 @@ class MusicPlayer(QObject):
         super().__init__(parent)
         self._player = None
         self._output = None
-        self._volume = 0.30
+        self._volume = DEFAULT_MUSIC_VOLUME
         if os.environ.get("QT_QPA_PLATFORM", "").lower() == "offscreen":
             return  # headless tests: never open a real audio stream
         try:
@@ -106,7 +107,7 @@ def selftest(out_path: str | Path) -> dict:
 
     song = asset_path("luolei.mp3")
     player = MusicPlayer(song)
-    player.set_volume(0.30)
+    player.set_volume(DEFAULT_MUSIC_VOLUME)
     player.set_playing(True)
     result["assets"]["music"] = {
         "path": str(song),

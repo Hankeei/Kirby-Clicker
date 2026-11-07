@@ -68,6 +68,74 @@ class AutoBoundsUiTest(unittest.TestCase):
         self.assertAlmostEqual(saved["auto_max_cps"], 50.0)
         self.assertAlmostEqual(saved["auto_min_cps"], 8.0)
 
+    def test_static_mode_ties_both_bounds_and_both_controls(self) -> None:
+        window = self.window
+        window.auto_method_combo.setCurrentIndex(
+            window.auto_method_combo.findData("static")
+        )
+        # The default 8/14 bounds collapse to their 11 CPS midpoint.
+        self.assertEqual(
+            (window.auto_min_spin.value(), window.auto_max_spin.value()), (11.0, 11.0)
+        )
+        self.assertEqual(
+            (window.auto_min_slider.value(), window.auto_max_slider.value()), (110, 110)
+        )
+
+        window.auto_min_spin.setValue(20.0)
+        self.assertEqual(
+            (window.auto_min_spin.value(), window.auto_max_spin.value()), (20.0, 20.0)
+        )
+        self.assertEqual(
+            (window.auto_min_slider.value(), window.auto_max_slider.value()), (200, 200)
+        )
+
+        window.auto_max_spin.setValue(7.5)
+        self.assertEqual(
+            (window.auto_min_spin.value(), window.auto_max_spin.value()), (7.5, 7.5)
+        )
+        self.assertEqual(
+            (window.auto_min_slider.value(), window.auto_max_slider.value()), (75, 75)
+        )
+
+        window.auto_min_slider.setValue(250)
+        self.assertEqual(
+            (window.auto_min_spin.value(), window.auto_max_spin.value()), (25.0, 25.0)
+        )
+        self.assertEqual(
+            (window.auto_min_slider.value(), window.auto_max_slider.value()), (250, 250)
+        )
+
+        window.auto_max_slider.setValue(120)
+        self.assertEqual(
+            (window.auto_min_spin.value(), window.auto_max_spin.value()), (12.0, 12.0)
+        )
+        self.assertEqual(
+            (window.auto_min_slider.value(), window.auto_max_slider.value()), (120, 120)
+        )
+        saved = self._saved()
+        self.assertAlmostEqual(saved["auto_min_cps"], 12.0)
+        self.assertAlmostEqual(saved["auto_max_cps"], 12.0)
+
+    def test_non_static_methods_keep_independent_bounds(self) -> None:
+        window = self.window
+        for method in ("blatant", "gaussian", "poisson", "gaussian_poisson"):
+            with self.subTest(method=method):
+                window.auto_method_combo.setCurrentIndex(
+                    window.auto_method_combo.findData(method)
+                )
+                window.auto_min_spin.setValue(8.0)
+                window.auto_max_spin.setValue(20.0)
+                window.auto_min_spin.setValue(12.0)
+                self.assertEqual(
+                    (window.auto_min_spin.value(), window.auto_max_spin.value()),
+                    (12.0, 20.0),
+                )
+                window.auto_max_spin.setValue(30.0)
+                self.assertEqual(
+                    (window.auto_min_spin.value(), window.auto_max_spin.value()),
+                    (12.0, 30.0),
+                )
+
     def test_method_and_sigma_enablement_persist(self) -> None:
         window = self.window
         self.assertFalse(window.auto_sigma_spin.isEnabled())  # blatant ignores sigma

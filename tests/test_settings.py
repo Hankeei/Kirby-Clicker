@@ -35,7 +35,7 @@ class SettingsRoundTripTest(unittest.TestCase):
         self.assertFalse(settings.compact_enabled)
         self.assertIsNone(settings.window_geometry)
         self.assertTrue(settings.music_enabled)
-        self.assertAlmostEqual(settings.music_volume, 0.30)
+        self.assertAlmostEqual(settings.music_volume, 0.05)
 
     def test_round_trip(self) -> None:
         settings = AppSettings(
@@ -116,8 +116,8 @@ class MusicSettingsTest(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def test_default_volume_is_thirty_percent(self) -> None:
-        self.assertAlmostEqual(AppSettings().music_volume, 0.30)
+    def test_default_volume_is_five_percent(self) -> None:
+        self.assertAlmostEqual(AppSettings().music_volume, 0.05)
         self.assertTrue(AppSettings().music_enabled)
 
     def test_music_option_and_volume_roundtrip(self) -> None:
@@ -143,13 +143,21 @@ class MusicSettingsTest(unittest.TestCase):
         )
         loaded = load_settings(self.path)
         self.assertTrue(loaded.music_enabled)
-        self.assertAlmostEqual(loaded.music_volume, 0.30)
+        self.assertAlmostEqual(loaded.music_volume, 0.05)
 
     def test_missing_music_fields_keep_defaults(self) -> None:
         self.path.write_text(json.dumps({"auto_method": "static"}), encoding="utf-8")
         loaded = load_settings(self.path)
         self.assertTrue(loaded.music_enabled)
-        self.assertAlmostEqual(loaded.music_volume, 0.30)
+        self.assertAlmostEqual(loaded.music_volume, 0.05)
+
+    def test_legacy_explicit_volume_is_preserved(self) -> None:
+        # Existing installs keep the volume they saved; only missing fields
+        # pick up the new 5 % default.
+        self.path.write_text(
+            json.dumps({"music_enabled": True, "music_volume": 0.30}), encoding="utf-8"
+        )
+        self.assertAlmostEqual(load_settings(self.path).music_volume, 0.30)
 
 
 class DataDirectoryTest(unittest.TestCase):

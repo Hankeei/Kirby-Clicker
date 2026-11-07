@@ -13,9 +13,12 @@ sys.path.insert(0, str(BASE))
 from app.core.profile import (  # noqa: E402
     Click,
     ClickProfile,
+    ProfileFormatError,
     compute_stats,
     generate_profile,
     load_profile,
+    profile_name_problem,
+    rename_profile_file,
     save_profile,
 )
 
@@ -88,6 +91,47 @@ class ProfileRoundTripTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(Exception):
                 save_profile(Path(tmp) / "bad.txt", profile)
+
+
+class ProfileRenameTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.folder = Path(self._tmp.name)
+        self.source = self.folder / "rec1.txt"
+        self.source.write_text("# ClickProfile v1\n# data\n10 20\n", encoding="utf-8")
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_rename_moves_the_file_and_keeps_its_content(self) -> None:
+        target = rename_profile_file(self.source, "session")
+        self.assertEqual(target, self.folder / "session.txt")
+        self.assertTrue(target.is_file())
+        self.assertFalse(self.source.exists())
+        self.assertEqual(target.read_text(encoding="utf-8").splitlines()[-1], "10 20")
+
+    def test_txt_suffix_is_implied_and_not_doubled(self) -> None:
+        self.assertEqual(rename_profile_file(self.source, "session.txt").name, "session.txt")
+
+    def test_same_name_is_a_no_op(self) -> None:
+        self.assertEqual(rename_profile_file(self.source, "rec1"), self.source)
+        self.assertTrue(self.source.exists())
+
+    def test_invalid_names_are_rejected_without_touching_the_file(self) -> None:
+        for name in ("", "   ", ".", "..", "a/b", "a\\b", "bad:name", "bad*name", "trailing.", ".txt"):
+            with self.subTest(name=name):
+                self.assertIsNotNone(profile_name_problem(name))
+                with self.assertRaises(ProfileFormatError):
+                    rename_profile_file(self.source, name)
+                self.assertTrue(self.source.exists())
+
+    def test_existing_name_is_a_conflict_and_is_never_overwritten(self) -> None:
+        other = self.folder / "taken.txt"
+        other.write_text("keep me", encoding="utf-8")
+        with self.assertRaises(ProfileFormatError):
+            rename_profile_file(self.source, "taken")
+        self.assertEqual(other.read_text(encoding="utf-8"), "keep me")
+        self.assertTrue(self.source.exists())
 
 
 if __name__ == "__main__":

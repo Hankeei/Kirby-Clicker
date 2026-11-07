@@ -437,12 +437,10 @@ class SettingsDialog(QDialog):
         files = Cushion("butter")
         files_row = QHBoxLayout()
         files_row.setSpacing(6)
-        window.profile_save_button = QPushButton("Save as…")
         window.profile_delete_button = QPushButton("Delete")
         window.profile_import_button = QPushButton("Import…")
         window.profile_export_button = QPushButton("Export…")
         for button in (
-            window.profile_save_button,
             window.profile_delete_button,
             window.profile_import_button,
             window.profile_export_button,
@@ -513,7 +511,6 @@ class SettingsDialog(QDialog):
         window.target_combo.currentIndexChanged.connect(window._on_target_changed)
         window.target_pick_button.clicked.connect(window._open_process_picker)
         window.target_refresh_button.clicked.connect(lambda: window._refresh_targets(announce=True))
-        window.profile_save_button.clicked.connect(window._save_as)
         window.profile_delete_button.clicked.connect(window._delete_profile)
         window.profile_import_button.clicked.connect(window._import_profile)
         window.profile_export_button.clicked.connect(window._export_profile)

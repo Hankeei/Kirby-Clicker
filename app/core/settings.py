@@ -14,7 +14,7 @@ VALID_BACKENDS = ("foreground", "background")
 DEFAULT_SIGMA = 0.15
 MIN_SIGMA = 0.05
 MAX_SIGMA = 0.40
-DEFAULT_MUSIC_VOLUME = 0.30
+DEFAULT_MUSIC_VOLUME = 0.05
 
 
 def _as_bool(value, default: bool) -> bool:

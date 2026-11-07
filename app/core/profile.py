@@ -248,6 +248,52 @@ def next_recording_path(folder: str | Path) -> Path:
         index += 1
 
 
+_INVALID_NAME_CHARS = '<>:"/\\|?*'
+
+
+def profile_name_problem(name: str) -> str | None:
+    """Return a user-facing problem for a profile name, or ``None`` if valid."""
+    raw = (name or "").strip()
+    if not raw:
+        return "Profile name cannot be empty."
+    if raw in (".", ".."):
+        return "That profile name is not allowed."
+    if any(ch in _INVALID_NAME_CHARS or ord(ch) < 32 for ch in raw):
+        return 'Profile names cannot contain <>:"/\\|?* or control characters.'
+    if raw.endswith(".") or raw.endswith(" "):
+        return "Profile names cannot end with a dot or space."
+    stem = raw[:-4] if raw.lower().endswith(".txt") else raw
+    if not stem.strip():
+        return "Profile name cannot be empty."
+    return None
+
+
+def rename_profile_file(path: str | Path, new_name: str) -> Path:
+    """Rename ``path`` to ``new_name`` (``.txt`` implied) inside its folder.
+
+    Raises :class:`ProfileFormatError` for an invalid or already-used name.
+    """
+    path = Path(path)
+    problem = profile_name_problem(new_name)
+    if problem:
+        raise ProfileFormatError(problem)
+    stem = (new_name or "").strip()
+    if stem.lower().endswith(".txt"):
+        stem = stem[:-4]
+    target = path.with_name(f"{stem}.txt")
+    if target == path:
+        return path
+    # A case-only change points at the same file on Windows; anything else
+    # that exists is a real conflict and must never be overwritten.
+    if target.name.casefold() != path.name.casefold() and target.exists():
+        raise ProfileFormatError(f"{target.name} already exists.")
+    try:
+        path.rename(target)
+    except OSError as exc:
+        raise ProfileFormatError(f"Could not rename {path.name}: {exc}") from exc
+    return target
+
+
 def median_gap(clicks: list[Click]) -> int:
     gaps = sorted(c.gap_ms for c in clicks)
     if not gaps:

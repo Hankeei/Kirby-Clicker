@@ -16,9 +16,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, Qt  # noqa: E402
 from PySide6.QtGui import QMovie  # noqa: E402
-from PySide6.QtWidgets import QApplication, QLabel  # noqa: E402
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton  # noqa: E402
 
-from app.core.profile import next_recording_path  # noqa: E402
+from app.core.profile import next_recording_path, save_profile_values  # noqa: E402
 from app.core.settings import AppSettings, load_settings, save_settings  # noqa: E402
 from app.core.trigger import ArmState  # noqa: E402
 from app.ui import theme  # noqa: E402
@@ -272,8 +272,8 @@ class RedesignWindowTest(unittest.TestCase):
         window = self.window
         # Background music is on by default and independent of ON/OFF.
         self.assertTrue(window.music_check.isChecked())
-        self.assertEqual(window.music_slider.value(), 30)
-        self.assertEqual(window.music_value.text(), "30%")
+        self.assertEqual(window.music_slider.value(), 5)
+        self.assertEqual(window.music_value.text(), "5%")
         window.music_check.setChecked(False)
         window.music_slider.setValue(55)
         saved = json.loads(
@@ -299,6 +299,63 @@ class RedesignWindowTest(unittest.TestCase):
         open_url.assert_called_once()
         self.assertIn("https://linktr.ee/hankeei", open_url.call_args.args[0].toString())
 
+    def _make_profile(self, name: str) -> Path:
+        path = self.window.profiles_dir / name
+        save_profile_values(path, [(10, 20), (12, 18), (14, 16)])
+        return path
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_rename_moves_the_profile_and_keeps_it_selected(self) -> None:
+        window = self.window
+        source = self._make_profile("rec1.txt")
+        self.assertTrue(window._load_profile_path(source, announce=False))
+        window._rename_profile("session")
+        target = window.profiles_dir / "session.txt"
+        self.assertTrue(target.is_file())
+        self.assertFalse(source.exists())
+        self.assertEqual(Path(window.profile_combo.currentData()), target)
+        self.assertEqual(window.profile.path, target)
+        self.assertEqual(window.profile.name, "session")
+
+    def test_rename_button_prompts_with_the_current_name(self) -> None:
+        window = self.window
+        source = self._make_profile("rec1.txt")
+        window._refresh_profiles(select_path=source)
+        with mock.patch(
+            "app.ui.main_window.QInputDialog.getText",
+            return_value=("from-button", True),
+        ) as get_text:
+            window.profile_rename_button.click()
+        get_text.assert_called_once()
+        self.assertEqual(get_text.call_args.kwargs["text"], "rec1")
+        target = window.profiles_dir / "from-button.txt"
+        self.assertTrue(target.is_file())
+        self.assertEqual(Path(window.profile_combo.currentData()), target)
+
+    def test_rename_rejects_a_name_that_already_exists(self) -> None:
+        window = self.window
+        first = self._make_profile("rec1.txt")
+        second = self._make_profile("taken.txt")
+        self.assertTrue(window._load_profile_path(first, announce=False))
+        with mock.patch("app.ui.main_window.QMessageBox.warning") as warning:
+            window._rename_profile("taken")
+        warning.assert_called_once()
+        self.assertTrue(first.is_file())
+        self.assertTrue(second.is_file())
+        self.assertEqual(second.read_text(encoding="utf-8").splitlines()[0], "# ClickProfile v1 (Kirby Clicker)")
+        self.assertEqual(Path(window.profile_combo.currentData()), first)
+
+    def test_open_folder_opens_the_real_profiles_directory(self) -> None:
+        window = self.window
+        self.assertTrue(window.profiles_dir.is_dir())
+        with mock.patch("app.ui.main_window.QDesktopServices.openUrl") as open_url:
+            window.profile_folder_button.click()
+        open_url.assert_called_once()
+        opened = Path(open_url.call_args.args[0].toLocalFile())
+        self.assertEqual(opened, window.profiles_dir)
+        self.assertTrue(opened.is_dir())
+
+    def test_save_as_button_is_gone(self) -> None:
+        window = self.window
+        self.assertFalse(hasattr(window, "profile_save_button"))
+        for button in window.settings_dialog.findChildren(QPushButton):
+            self.assertNotIn("Save as", button.text())
