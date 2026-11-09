@@ -12,7 +12,13 @@ if ($LASTEXITCODE -ne 0) { throw "dependency install failed" }
 $assets = Join-Path $PSScriptRoot "assets"
 $readme = Join-Path $PSScriptRoot "README.md"
 
-py -3.13 -m PyInstaller `
+# Keep unrelated tools' DLLs (notably Poppler's icuuc.dll) out of dependency
+# discovery. Qt uses Windows' ICU API, not the ICU bundled with those tools.
+$pythonLauncher = (Get-Command py -ErrorAction Stop).Source
+$buildPath = $env:PATH
+try {
+$env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+& $pythonLauncher -3.13 -m PyInstaller `
     --noconfirm `
     --clean `
     --onefile `
@@ -26,7 +32,11 @@ py -3.13 -m PyInstaller `
     --workpath build/work `
     --specpath build `
     main.py
-if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed" }
+$buildExitCode = $LASTEXITCODE
+} finally {
+    $env:PATH = $buildPath
+}
+if ($buildExitCode -ne 0) { throw "PyInstaller build failed" }
 
 $exe = Get-Item -LiteralPath (Join-Path $PSScriptRoot "dist\KirbyClicker.exe")
 $sizeMb = [math]::Round($exe.Length / 1MB, 1)

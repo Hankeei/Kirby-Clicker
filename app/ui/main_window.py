@@ -70,7 +70,7 @@ from ..core.windows import Target, WindowInfo, enumerate_visible_windows, find_w
 from . import theme
 from .compact import CompactOverlay
 from .dialogs import BindEditorDialog, ProcessPickerDialog, SettingsDialog
-from .music import MusicPlayer
+from .music import MusicPlayer, ToggleSounds
 from .widgets import (
     Card,
     Cushion,
@@ -133,6 +133,7 @@ class MainWindow(QMainWindow):
         self._startup_errors: list[str] = []
         self._loading_profile = False
         self._messages: list[str] = []
+        self.toggle_sounds = ToggleSounds(self)
         self.music = MusicPlayer(asset_path("luolei.mp3"), self)
         self.music.set_volume(self.settings.music_volume)
 
@@ -627,6 +628,7 @@ class MainWindow(QMainWindow):
             )
             if not self._auto_tab_active() and not (self.profile and self.profile.clicks):
                 self._append_log("warn", "No profile loaded yet.")
+        self.toggle_sounds.play(self.arm.armed)
         self._update_arm_ui()
         self._set_mode(self.mode)
         self._update_compact_state()

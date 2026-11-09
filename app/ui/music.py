@@ -17,6 +17,35 @@ from ..core.paths import asset_path
 from ..core.settings import DEFAULT_MUSIC_VOLUME
 
 
+class ToggleSounds(QObject):
+    """Short, quiet rising/falling cues, independent of background music."""
+
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+        self._effects = {}
+        if os.environ.get("QT_QPA_PLATFORM", "").lower() == "offscreen":
+            return
+        try:
+            from PySide6.QtMultimedia import QSoundEffect
+
+            for armed, name in ((True, "on"), (False, "off")):
+                path = asset_path(f"toggle_{name}.wav")
+                if path.exists():
+                    effect = QSoundEffect(self)
+                    effect.setVolume(0.18)
+                    effect.setSource(QUrl.fromLocalFile(str(path)))
+                    self._effects[armed] = effect
+        except Exception:  # Audio availability must never prevent startup.
+            self._effects.clear()
+
+    def play(self, armed: bool) -> None:
+        for effect in self._effects.values():
+            effect.stop()
+        effect = self._effects.get(armed)
+        if effect is not None:
+            effect.play()
+
+
 class MusicPlayer(QObject):
     """QMediaPlayer wrapper: one looping source, 0.0-1.0 volume, quiet failures."""
 
