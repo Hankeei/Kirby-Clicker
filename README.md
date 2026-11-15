@@ -1,6 +1,6 @@
 # Kirby Clicker
 
-A small Windows clicker with Kirby mascots. Record your own clicking rhythm or
+A small cute clicker with Kirby. Record your own clicking rhythm or
 choose an automatic clicking speed.
 
 **Turn it ON, hold your mouse button to click, and release to stop.**
@@ -83,3 +83,5 @@ Older GMK / Record Clicker profiles remain supported.
 ---
 
 Building or maintaining the app? See [DEVELOPER.md](DEVELOPER.md).
+
+*just a small project for my to vibe code on hehe*
