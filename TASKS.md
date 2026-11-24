@@ -1,25 +1,16 @@
 # TASKS.md — open items
 
-Real, currently observable issues at v1.2.0. Nothing here is a roadmap commitment. Each item is
+Tracked issues and decisions for native v1.3.0. The Python implementation is retained as a historical reference. Nothing here is a roadmap commitment. Each item is
 tagged **bug**, **limitation**, or **idea**, with the evidence and the smallest sensible next
 step.
 
 ## Bugs
 
-### T1 — Static mode: typing 31–50 CPS pins both bounds at 30
+### T1 — Static mode 31–50 CPS: fixed in native v1.3
 
-**Type:** bug · **Area:** Auto tab / timing bounds
-
-**Evidence:** In [`app/ui/main_window.py`](app/ui/main_window.py) the sliders are
-`setRange(10, 300)` (i.e. 1.0–30.0 CPS) while the spin boxes are `setRange(1.0, 50.0)`. In
-`Static ⚠` the bounds are linked: typing `40` in one spin box sets the other spin box to 40,
-then `_tie_static_bounds()` writes 40 into the sliders; `QSlider` clamps to 300 (= 30 CPS), its
-`valueChanged` fires `_apply_auto_bounds()`, and both spin boxes are rewritten to 30. Values
-31–50 are reachable only by typing, and end up pinned at 30.
-
-**Next step:** either extend both sliders to `setRange(10, 500)` or suppress the slider→spin
-write-back while the typed value is above the slider maximum. Add a UI test for typing 40 in
-Static mode.
+The Rust UI uses 1–50 CPS for both sliders and numeric values and links the two
+bounds in Static mode. Native tests check the 50 CPS timing boundary.
+The retained Python UI still has the original 30 CPS slider limitation.
 
 ## Limitations
 
@@ -29,26 +20,25 @@ Static mode.
 
 **Evidence:** At the 440×250 minimum the two Recorder cards (Record + PROFILES) exceed the
 viewport height, so the tab scrolls vertically. Width was deliberately fitted so nothing clips
-horizontally (`tests/test_ui_redesign.py` asserts this).
+horizontally (native GUI smoke checks this; `tests/test_ui_redesign.py` covers the Python reference).
 
 **Next step:** none required unless the minimum size changes. If it does, re-measure page width
 against viewport width and update the layout test.
 
 ### T3 — Compact overlay is not click-through
 
-**Type:** limitation · **Area:** `app/ui/compact.py`
+**Type:** limitation · **Area:** native compact UI (historical Python reference: `app/ui/compact.py`)
 
-**Evidence:** `CompactOverlay` sets `Qt.Tool | FramelessWindowHint | WindowStaysOnTopHint |
-WindowDoesNotAcceptFocus` and `WA_ShowWithoutActivating`, but does **not** set
-`WA_TransparentForMouseEvents` or `WS_EX_TRANSPARENT`. The 188×104 widget can cover a small part
-of a game and intercept clicks there.
-
+**Evidence:** native compact mode sets topmost and WS_EX_NOACTIVATE /
+WS_EX_TOOLWINDOW, but deliberately does not set mouse pass-through. Its power
+and restore controls need to receive mouse input. The GUI smoke test checks the
+no-activate flag. The historical Python overlay has the same trade-off.
 **Next step:** treat as a design trade-off. Click-through would also make the overlay's ON/OFF
 and restore buttons unreachable; a solution needs a separate hit-test or a mode toggle.
 
 ### T4 — No per-click button in the profile format
 
-**Type:** limitation · **Area:** `app/core/profile.py`, `app/core/transfer.py`
+**Type:** limitation · **Area:** native/src/lib.rs, native/src/storage.rs (Python reference: app/core/profile.py, app/core/transfer.py)
 
 **Evidence:** The v1 text format has a single `button=left|right|middle` header, and
 `save_profile()` raises `ProfileFormatError` when clicks disagree with it. Exchange v2 JSON also

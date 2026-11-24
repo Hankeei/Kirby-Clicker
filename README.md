@@ -5,7 +5,7 @@ choose an automatic clicking speed.
 
 **Turn it ON, hold your mouse button to click, and release to stop.**
 
-![Kirby Clicker](screenshots/app.png)
+![Kirby Clicker](screenshots/native_recorder.png)
 
 ## Download
 
@@ -13,7 +13,9 @@ choose an automatic clicking speed.
 2. Download **KirbyClicker.exe** under **Assets**.
 3. Double-click it to open. No installation or Python required.
 
-For Windows 10/11. The app is unsigned, so Windows may show a security warning.
+**v1.3 is now a native Rust app**, with a smaller standalone EXE and no Python or Qt required.
+
+For Windows 10/11 with up-to-date graphics drivers. The app is unsigned, so Windows may show a security warning.
 Only run a copy from a source you trust.
 
 ## Start clicking
@@ -71,9 +73,9 @@ Change these in **Settings → Edit binds…**.
 ## Helpful notes
 
 - Some games and protected apps may block automated clicks or shortcuts.
-- If a shortcut does not respond, check whether another app uses it or change it.
+- If a shortcut is busy, the status message shows a Ctrl+key fallback. You can also change it in Settings.
 - The Background click option works in some apps; try Foreground if clicks are ignored.
-- Static mode currently clamps typed values above 30 CPS back to 30.
+- Static mode supports a steady rate from 1 to 50 CPS.
 - The compact control can cover and intercept clicks in a small area; move it aside.
 
 The downloaded app stores your settings and recordings in

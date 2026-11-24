@@ -12,6 +12,7 @@ __pycache__/
 # Virtual environments
 .venv/
 .venv-build/
+native/target/
 venv/
 
 # Local runtime data (created next to the source on launch)

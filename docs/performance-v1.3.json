@@ -1,0 +1,50 @@
+[
+    {
+        "implementation":  "Rust",
+        "trial":  1,
+        "ready_ms":  331,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  106.7,
+        "exe_bytes":  9190400
+    },
+    {
+        "implementation":  "Python v1.2",
+        "trial":  1,
+        "ready_ms":  1946.2,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  151.7,
+        "exe_bytes":  61507538
+    },
+    {
+        "implementation":  "Rust",
+        "trial":  2,
+        "ready_ms":  258.4,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  106.8,
+        "exe_bytes":  9190400
+    },
+    {
+        "implementation":  "Python v1.2",
+        "trial":  2,
+        "ready_ms":  1864.3,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  154,
+        "exe_bytes":  61507538
+    },
+    {
+        "implementation":  "Rust",
+        "trial":  3,
+        "ready_ms":  257.5,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  107,
+        "exe_bytes":  9190400
+    },
+    {
+        "implementation":  "Python v1.2",
+        "trial":  3,
+        "ready_ms":  1920,
+        "idle_cpu_percent_one_core":  0,
+        "working_set_mb":  154.3,
+        "exe_bytes":  61507538
+    }
+]
